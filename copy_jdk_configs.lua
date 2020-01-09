@@ -15,6 +15,7 @@ local origname = nil
 local origjavaver = nil
 local arch = nil
 local debug = false;
+local temp = nil;
 
 for i=1,#arg,2 do 
   if (arg[i] == "--help" or arg[i] == "-h") then 
@@ -33,6 +34,8 @@ for i=1,#arg,2 do
     print("    Migration/testing switch. Target Mostly same as jvmdir, but you may wont to copy ouside it.")
     print("  --debug")
     print("    Enables printing out whats going on. true/false")
+    print("  --temp")
+    print("    optional file to save intermediate result - directory configs were copied from")
     os.exit(0)
   end
   if (arg[i] == "--currentjvm") then 
@@ -59,9 +62,12 @@ for i=1,#arg,2 do
      debug = true
     end
   end
+  if (arg[i] == "--temp") then 
+    temp=arg[i+1]
+  end
 end
 
-if (jvmDestdir == nill) then
+if (jvmDestdir == nil) then
 jvmDestdir = jvmdir
 end
 
@@ -104,7 +110,41 @@ local caredFiles = {"jre/lib/calendars.properties",
               "jre/lib/security/java.security",
               "jre/lib/security/local_policy.jar",
               "jre/lib/security/nss.cfg",
-              "jre/lib/ext"}
+              "jre/lib/security/cacerts",
+              "jre/lib/security/blacklisted.certs",
+              "jre/lib/ext",
+              "lib/calendars.properties",
+              "lib/content-types.properties",
+              "lib/flavormap.properties",
+              "lib/logging.properties",
+              "lib/net.properties",
+              "lib/psfontj2d.properties",
+              "lib/sound.properties",
+              "lib/deployment.properties",
+              "lib/deployment.config",
+              "lib/security/US_export_policy.jar",
+              "lib/security/java.policy",
+              "lib/security/java.security",
+              "lib/security/local_policy.jar",
+              "lib/security/nss.cfg",
+              "lib/security/cacerts",
+              "lib/security/blacklisted.certs",
+              "lib/security/default.policy",
+              "conf/security/policy/limited/exempt_local.policy",
+              "conf/security/policy/limited/default_local.policy",
+              "conf/security/policy/limited/default_US_export.policy",
+              "conf/security/policy/unlimited/default_local.policy",
+              "conf/security/policy/unlimited/default_US_export.policy",
+              "conf/security/java.policy",
+              "conf/security/java.security",
+              "conf/logging.properties",
+              "conf/security/nss.cfg",
+              "conf/management/jmxremote.access",
+              "conf/management/jmxremote.password.template",
+              "conf/management/management.properties",
+              "conf/net.properties",
+              "conf/sound.properties",
+              "lib/ext"}
 
 function splitToTable(source, pattern)
   local i1 = string.gmatch(source, pattern) 
@@ -143,7 +183,11 @@ for i,p in pairs(foundJvms) do
       end;
       return
     end ;
-    table.insert(jvms, p)
+    if (string.match(p, ".*-debug$")) then
+      print(p.." matched but seems to be debug variant. Skipping")
+    else
+      table.insert(jvms, p)
+    end
   else
     if (debug) then
       print("NOT matched:  "..p)
@@ -193,6 +237,16 @@ if (debug) then
 end
 
 latestjvm = jvms[#jvms]
+
+if ( temp ~= nil ) then
+  src=jvmdir.."/"..latestjvm
+  if (debug) then
+    print("temp declared as "..temp.." saving used dir of "..src)
+  end
+  file = io.open (temp, "w")
+  file:write(src)
+  file:close()
+end 
 
 
 for i,file in pairs(caredFiles) do

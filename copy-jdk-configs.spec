@@ -1,17 +1,21 @@
 %global project copy_jdk_configs
 %global file %{project}.lua
+%global fixFile %{project}_fixFiles.sh
 %global rpm_state_dir %{_localstatedir}/lib/rpm-state
 
 Name:    copy-jdk-configs
 
-Version: 1.2
-Release: 1%{?dist}
+# hash relevant to version tag
+%global  htag 3f9d6c4448f867a95fb166416a41c45c7e795c10
+Version: 2.2
+Release: 3%{?dist}
 Summary: JDKs configuration files copier
 
 License:  BSD
-URL:      https://hg.fedorahosted.org/hg/%{project}
-Source0:  https://hg.fedorahosted.org/hg/copy_jdk_configs/raw-file/%{project}-%{version}/%{file}
-Source1:  https://hg.fedorahosted.org/hg/copy_jdk_configs/raw-file/%{project}-%{version}/LICENSE
+URL:      https://pagure.io/%{project}
+Source0:  %{URL}/blob/%{htag}/f/%{file}
+Source1:  %{URL}/blob/%{htag}/f/LICENSE
+Source2:  %{URL}/blob/%{htag}/f/%{fixFile}
 
 # we need to duplicate msot of the percents in that script so they survive rpm expansion (even in that sed they have to be duplicated)
 %global pretrans_install %(cat %{SOURCE0} | sed s/%%/%%%%/g | sed s/\\^%%%%/^%%/g) 
@@ -23,7 +27,7 @@ Requires: lua
 
 %description
 Utility script to transfer JDKs configuration files between updates or for
-archiving.
+archiving. With script to fix incorrectly created rpmnew files
 
 %prep
 cp -a %{SOURCE1} .
@@ -56,6 +60,7 @@ end
 mkdir -p $RPM_BUILD_ROOT/%{_libexecdir}
 cp -a %{SOURCE0} $RPM_BUILD_ROOT/%{_libexecdir}/%{file}
 chmod 644 $RPM_BUILD_ROOT/%{_libexecdir}/%{file}
+cp -a %{SOURCE2} $RPM_BUILD_ROOT/%{_libexecdir}/%{fixFile}
 
 %posttrans
 # remove file created in pretrans
@@ -64,9 +69,26 @@ rm "%{rpm_state_dir}/%{file}" 2> /dev/null || :
 
 %files 
 %{_libexecdir}/%{file}
+%{_libexecdir}/%{fixFile}
 %license LICENSE
 
 %changelog
+* Mon Jun 19 2017 Jiri Vanek <jvanek@redhat.com> - 2.2-3
+- updated to latest head
+- Resolves: rhbz#1427463
+
+* Tue Jun 13 2017 Jiri Vanek <jvanek@redhat.com> - 2.2-1
+- added "jre/lib/security/blacklisted.certs" to cared files
+- moved to newest release 2.1
+- moved to new upstream at pagure.io
+- added new script of copy_jdk_configs_fixFiles.sh 
+- copy_jdk_configs.lua  aligned to it
+- Resolves: rhbz#1427463
+
+* Tue Dec 01 2016 Jiri Vanek <jvanek@redhat.com> - 1.3-1
+- updated to upstream 1.3 (adding jre/lib/security/cacerts file)
+- Resolves: rhbz#1399719
+
 * Tue Aug 09 2016 Jiri Vanek <jvanek@redhat.com> - 1.2-1
 - updated to 1,3 which fixing nss minor issue
 - Resolves: rhbz#1296430

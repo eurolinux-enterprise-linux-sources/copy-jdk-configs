@@ -8,7 +8,7 @@ Name:    copy-jdk-configs
 # hash relevant to version tag
 %global  htag 3f9d6c4448f867a95fb166416a41c45c7e795c10
 Version: 2.2
-Release: 3%{?dist}
+Release: 5%{?dist}
 Summary: JDKs configuration files copier
 
 License:  BSD
@@ -16,6 +16,8 @@ URL:      https://pagure.io/%{project}
 Source0:  %{URL}/blob/%{htag}/f/%{file}
 Source1:  %{URL}/blob/%{htag}/f/LICENSE
 Source2:  %{URL}/blob/%{htag}/f/%{fixFile}
+
+Patch1: newPolices.patch
 
 # we need to duplicate msot of the percents in that script so they survive rpm expansion (even in that sed they have to be duplicated)
 %global pretrans_install %(cat %{SOURCE0} | sed s/%%/%%%%/g | sed s/\\^%%%%/^%%/g) 
@@ -59,6 +61,11 @@ end
 %install
 mkdir -p $RPM_BUILD_ROOT/%{_libexecdir}
 cp -a %{SOURCE0} $RPM_BUILD_ROOT/%{_libexecdir}/%{file}
+pushd $RPM_BUILD_ROOT/%{_libexecdir}/
+patch -p1 < %{PATCH1}
+rm -f *.orig
+rm -f *.rej
+popd
 chmod 644 $RPM_BUILD_ROOT/%{_libexecdir}/%{file}
 cp -a %{SOURCE2} $RPM_BUILD_ROOT/%{_libexecdir}/%{fixFile}
 
@@ -73,6 +80,14 @@ rm "%{rpm_state_dir}/%{file}" 2> /dev/null || :
 %license LICENSE
 
 %changelog
+* Tue Nov 21 2017 Jiri Vanek <jvanek@redhat.com> - 2.2-5
+- adapted (added policy subdir) patch1: newPolices.patch
+- Resolves: rhbz#1513697
+
+* Thu Nov 16 2017 Jiri Vanek <jvanek@redhat.com> - 2.2-4
+- added an daplied in install patch1: newPolices.patch
+- Resolves: rhbz#1513697
+
 * Mon Jun 19 2017 Jiri Vanek <jvanek@redhat.com> - 2.2-3
 - updated to latest head
 - Resolves: rhbz#1427463

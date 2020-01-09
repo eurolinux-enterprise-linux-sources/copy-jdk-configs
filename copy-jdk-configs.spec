@@ -6,9 +6,9 @@
 Name:    copy-jdk-configs
 
 # hash relevant to version tag
-%global  htag ed45a7dce13fab490529d4d13a064d379c8f66e7
+%global  htag f1cd4541f89ac601873ee16d6aa3b3cb1497f0d5
 Version: 3.3
-Release: 10%{?dist}
+Release: 2%{?dist}
 Summary: JDKs configuration files copier
 
 License:  BSD
@@ -73,14 +73,6 @@ rm "%{rpm_state_dir}/%{file}" 2> /dev/null || :
 %license LICENSE
 
 %changelog
-* Mon Apr 30 2018 Jiri Vanek <jvanek@redhat.com> - 3.3-10
-- added javaws.policy and blacklist
-- Resolves: rhbz#1573163
-
-* Wed Apr 25 2018 Jiri Vanek <jvanek@redhat.com> - 3.3-3
-- fixes issue when java.security for openjdk7 was erased
-- Resolves: rhbz#1573163 
-
 * Fri Nov 03 2017 Jiri Vanek <jvanek@redhat.com> - 3.3-2
 - added another subdirs for policies files
 - Resolves: rhbz#1503647
@@ -103,7 +95,7 @@ rm "%{rpm_state_dir}/%{file}" 2> /dev/null || :
 - copy_jdk_configs.lua  aligned to it
 - Resolves: rhbz#1427463
 
-* Thu Dec 01 2016 Jiri Vanek <jvanek@redhat.com> - 1.3-1
+* Tue Dec 01 2016 Jiri Vanek <jvanek@redhat.com> - 1.3-1
 - updated to upstream 1.3 (adding jre/lib/security/cacerts file)
 - Resolves: rhbz#1399719
 

@@ -60,35 +60,22 @@ fi
 
 
 listLinks(){
-  find $1 -type l -print0 | xargs -0 ls -ld | sed "s; \+-> \+;_->_;g" | sed "s;.* $1;$1;"
-}
-
-printIfExists(){
-  if [ -e $ffileCandidate ] ; then
-    echo $1
-  else
-    # stdout can be captured, therefore stderr
-    debug "skipping not-existing link-target-dir $1" 1>&2
-  fi
+  find $1 -type l -print0 | xargs -0 ls -ld | sed "s;.* $1;$1;" | sed "s; \+;_;g"
 }
 
 createListOfLinksTargetsDirectories(){
   pushd $source >/dev/null 2>&1 
     local links=`listLinks $1`
     for x in $links ; do 
-      echo "$x" | grep "jre-abrt" > /dev/null
-      if [ $? -eq 0 ] ; then
-        continue
-      fi
       local ffileCandidate=$(echo $x | sed "s/.*_->_//") ;
 # ignoring relative paths as they may lead who know where later   
 # there can be simlink relative to position, so push is not catching all
       if [ "$ffileCandidate" != "${ffileCandidate#/}" ] ; then
         if [ -d $ffileCandidate ] ; then
 # should we accept the links to directories themselves?
-          printIfExists $ffileCandidate
+          echo $ffileCandidate
         else
-          printIfExists `dirname $ffileCandidate`
+          dirname $ffileCandidate
         fi
       fi
     done | sort | uniq
@@ -133,7 +120,8 @@ work(){
     if [ $? -gt 0 ] ; then
      if [ "X$1" == "Xrpmnew" ] ; then
        debug "$sf2 was NOT modified, removing possibly corrupted $sf1 and renaming from $file"
-       mv $rma -f $file $sf1
+       rm $rma $sf1 
+       mv $rma $file $sf1
        if [ $? -eq 0 ] ; then
          echo "restored $file to $sf1"
        else
@@ -190,9 +178,8 @@ files=`find $sourceSearchPath | grep "\\.rpmsave$"`
 
 #warning: file /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.131-11.b12.el7.x86_64-debug/jre/lib/applet: remove failed: No such file or directory
 #warning: file /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.131-11.b12.el7.x86_64-debug/jre/lib/amd64/client: remove failed: No such file or directory
-#warning: file /usr/lib/jvm/java-1.7.0-openjdk-1.7.0.171-2.6.13.2.el7.x86_64/jre/lib/amd64/xawt: remove failed: No such file or directory
 #those dirs might be mepty by installtion, filling to not be rmeoved later
-blackdirs="$source/jre/lib/applet $source/jre/lib/*/client $source/jre/lib/locale/*/LC_MESSAGE $source/jre/lib/*/xawt"
+blackdirs="$source/jre/lib/applet $source/jre/lib/*/client $source/jre/lib/locale/*/LC_MESSAGE"
 for blackdir in $blackdirs; do
   if [ -e $blackdir ] ; then
     debug "nasty $blackdir  exists, filling"

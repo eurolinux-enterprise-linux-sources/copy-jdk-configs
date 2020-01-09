@@ -1,19 +1,21 @@
 %global project copy_jdk_configs
 %global file %{project}.lua
+%global fixFile %{project}_fixFiles.sh
 %global rpm_state_dir %{_localstatedir}/lib/rpm-state
 
 Name:    copy-jdk-configs
 
-Version: 1.3
-Release: 3%{?dist}
+# hash relevant to version tag
+%global  htag de7cb1123c5e519b2d946f3afb9812e976954d0d
+Version: 3.3
+Release: 9%{?dist}
 Summary: JDKs configuration files copier
 
 License:  BSD
-URL:      https://hg.fedorahosted.org/hg/%{project}
-Source0:  https://hg.fedorahosted.org/hg/copy_jdk_configs/raw-file/%{project}-%{version}/%{file}
-Source1:  https://hg.fedorahosted.org/hg/copy_jdk_configs/raw-file/%{project}-%{version}/LICENSE
-
-Patch1: newPolices.patch
+URL:      https://pagure.io/%{project}
+Source0:  %{URL}/blob/%{htag}/f/%{file}
+Source1:  %{URL}/blob/%{htag}/f/LICENSE
+Source2:  %{URL}/blob/%{htag}/f/%{fixFile}
 
 # we need to duplicate msot of the percents in that script so they survive rpm expansion (even in that sed they have to be duplicated)
 %global pretrans_install %(cat %{SOURCE0} | sed s/%%/%%%%/g | sed s/\\^%%%%/^%%/g) 
@@ -25,7 +27,7 @@ Requires: lua
 
 %description
 Utility script to transfer JDKs configuration files between updates or for
-archiving.
+archiving. With script to fix incorrectly created rpmnew files
 
 %prep
 cp -a %{SOURCE1} .
@@ -57,14 +59,10 @@ end
 %install
 mkdir -p $RPM_BUILD_ROOT/%{_libexecdir}
 cp -a %{SOURCE0} $RPM_BUILD_ROOT/%{_libexecdir}/%{file}
-pushd $RPM_BUILD_ROOT/%{_libexecdir}/
-patch -p1 < %{PATCH1}
-rm -f *.orig
-rm -f *.rej
-popd
 chmod 644 $RPM_BUILD_ROOT/%{_libexecdir}/%{file}
 mkdir -p $RPM_BUILD_ROOT/%{_docdir}/%{project}/
 cp %{SOURCE1} $RPM_BUILD_ROOT/%{_docdir}/%{project}/
+cp -a %{SOURCE2} $RPM_BUILD_ROOT/%{_libexecdir}/%{fixFile}
 
 %posttrans
 # remove file created in pretrans
@@ -73,16 +71,21 @@ rm "%{rpm_state_dir}/%{file}" 2> /dev/null || :
 
 %files 
 %{_libexecdir}/%{file}
+%{_libexecdir}/%{fixFile}
 %doc %{_docdir}/%{project}/LICENSE
 
 %changelog
-* Tue Nov 21 2017 Jiri Vanek <jvanek@redhat.com> - 1.3-3
-- adapted (added policy subdir) patch1: newPolices.patch
-- Resolves: rhbz#1513696
+* Wed Apr 25 2018 Jiri Vanek <jvanek@redhat.com> - 3.3-3
+- fixes issue when java.security for openjdk7 was erased
+- Resolves: rhbz#1503666
 
-* Thu Nov 16 2017 Jiri Vanek <jvanek@redhat.com> - 1.3-2
-- added an daplied in install patch1: newPolices.patch
-- Resolves: rhbz#1513696
+* Fri Nov 03 2017 Jiri Vanek <jvanek@redhat.com> - 3.3-2
+- added another subdirs for policies files
+- Resolves: rhbz#1503666
+
+* Fri Nov 03 2017 Jiri Vanek <jvanek@redhat.com> - 3.3-1
+- updated to 3.3
+- Resolves: rhbz#1503666
 
 * Tue Dec 01 2016 Jiri Vanek <jvanek@redhat.com> - 1.3-1
 - updated to upstream 1.3 (adding jre/lib/security/cacerts file)

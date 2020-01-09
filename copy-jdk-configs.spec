@@ -5,13 +5,15 @@
 Name:    copy-jdk-configs
 
 Version: 1.3
-Release: 1%{?dist}
+Release: 3%{?dist}
 Summary: JDKs configuration files copier
 
 License:  BSD
 URL:      https://hg.fedorahosted.org/hg/%{project}
 Source0:  https://hg.fedorahosted.org/hg/copy_jdk_configs/raw-file/%{project}-%{version}/%{file}
 Source1:  https://hg.fedorahosted.org/hg/copy_jdk_configs/raw-file/%{project}-%{version}/LICENSE
+
+Patch1: newPolices.patch
 
 # we need to duplicate msot of the percents in that script so they survive rpm expansion (even in that sed they have to be duplicated)
 %global pretrans_install %(cat %{SOURCE0} | sed s/%%/%%%%/g | sed s/\\^%%%%/^%%/g) 
@@ -55,6 +57,11 @@ end
 %install
 mkdir -p $RPM_BUILD_ROOT/%{_libexecdir}
 cp -a %{SOURCE0} $RPM_BUILD_ROOT/%{_libexecdir}/%{file}
+pushd $RPM_BUILD_ROOT/%{_libexecdir}/
+patch -p1 < %{PATCH1}
+rm -f *.orig
+rm -f *.rej
+popd
 chmod 644 $RPM_BUILD_ROOT/%{_libexecdir}/%{file}
 mkdir -p $RPM_BUILD_ROOT/%{_docdir}/%{project}/
 cp %{SOURCE1} $RPM_BUILD_ROOT/%{_docdir}/%{project}/
@@ -69,6 +76,14 @@ rm "%{rpm_state_dir}/%{file}" 2> /dev/null || :
 %doc %{_docdir}/%{project}/LICENSE
 
 %changelog
+* Tue Nov 21 2017 Jiri Vanek <jvanek@redhat.com> - 1.3-3
+- adapted (added policy subdir) patch1: newPolices.patch
+- Resolves: rhbz#1513696
+
+* Thu Nov 16 2017 Jiri Vanek <jvanek@redhat.com> - 1.3-2
+- added an daplied in install patch1: newPolices.patch
+- Resolves: rhbz#1513696
+
 * Tue Dec 01 2016 Jiri Vanek <jvanek@redhat.com> - 1.3-1
 - updated to upstream 1.3 (adding jre/lib/security/cacerts file)
 - Resolves: rhbz#1391735

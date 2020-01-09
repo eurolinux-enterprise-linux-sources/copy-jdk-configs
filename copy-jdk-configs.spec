@@ -6,9 +6,9 @@
 Name:    copy-jdk-configs
 
 # hash relevant to version tag
-%global  htag 3f9d6c4448f867a95fb166416a41c45c7e795c10
-Version: 2.2
-Release: 5%{?dist}
+%global  htag ed45a7dce13fab490529d4d13a064d379c8f66e7
+Version: 3.3
+Release: 10%{?dist}
 Summary: JDKs configuration files copier
 
 License:  BSD
@@ -16,8 +16,6 @@ URL:      https://pagure.io/%{project}
 Source0:  %{URL}/blob/%{htag}/f/%{file}
 Source1:  %{URL}/blob/%{htag}/f/LICENSE
 Source2:  %{URL}/blob/%{htag}/f/%{fixFile}
-
-Patch1: newPolices.patch
 
 # we need to duplicate msot of the percents in that script so they survive rpm expansion (even in that sed they have to be duplicated)
 %global pretrans_install %(cat %{SOURCE0} | sed s/%%/%%%%/g | sed s/\\^%%%%/^%%/g) 
@@ -61,11 +59,6 @@ end
 %install
 mkdir -p $RPM_BUILD_ROOT/%{_libexecdir}
 cp -a %{SOURCE0} $RPM_BUILD_ROOT/%{_libexecdir}/%{file}
-pushd $RPM_BUILD_ROOT/%{_libexecdir}/
-patch -p1 < %{PATCH1}
-rm -f *.orig
-rm -f *.rej
-popd
 chmod 644 $RPM_BUILD_ROOT/%{_libexecdir}/%{file}
 cp -a %{SOURCE2} $RPM_BUILD_ROOT/%{_libexecdir}/%{fixFile}
 
@@ -80,13 +73,23 @@ rm "%{rpm_state_dir}/%{file}" 2> /dev/null || :
 %license LICENSE
 
 %changelog
-* Tue Nov 21 2017 Jiri Vanek <jvanek@redhat.com> - 2.2-5
-- adapted (added policy subdir) patch1: newPolices.patch
-- Resolves: rhbz#1513697
+* Mon Apr 30 2018 Jiri Vanek <jvanek@redhat.com> - 3.3-10
+- added javaws.policy and blacklist
+- Resolves: rhbz#1573163
 
-* Thu Nov 16 2017 Jiri Vanek <jvanek@redhat.com> - 2.2-4
-- added an daplied in install patch1: newPolices.patch
-- Resolves: rhbz#1513697
+* Wed Apr 25 2018 Jiri Vanek <jvanek@redhat.com> - 3.3-3
+- fixes issue when java.security for openjdk7 was erased
+- Resolves: rhbz#1573163 
+
+* Fri Nov 03 2017 Jiri Vanek <jvanek@redhat.com> - 3.3-2
+- added another subdirs for policies files
+- Resolves: rhbz#1503647
+- Resolves: rhbz#1503668
+
+* Fri Nov 03 2017 Jiri Vanek <jvanek@redhat.com> - 3.3-1
+- updated to 3.3
+- Resolves: rhbz#1503647
+- Resolves: rhbz#1503668
 
 * Mon Jun 19 2017 Jiri Vanek <jvanek@redhat.com> - 2.2-3
 - updated to latest head
@@ -100,7 +103,7 @@ rm "%{rpm_state_dir}/%{file}" 2> /dev/null || :
 - copy_jdk_configs.lua  aligned to it
 - Resolves: rhbz#1427463
 
-* Tue Dec 01 2016 Jiri Vanek <jvanek@redhat.com> - 1.3-1
+* Thu Dec 01 2016 Jiri Vanek <jvanek@redhat.com> - 1.3-1
 - updated to upstream 1.3 (adding jre/lib/security/cacerts file)
 - Resolves: rhbz#1399719
 

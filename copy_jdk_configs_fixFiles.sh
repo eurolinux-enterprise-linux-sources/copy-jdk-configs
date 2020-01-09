@@ -58,8 +58,63 @@ if [ ! -d  "$source" ] ; then
   exit 33
 fi 
 
+
+listLinks(){
+  find $1 -type l -print0 | xargs -0 ls -ld | sed "s; \+-> \+;_->_;g" | sed "s;.* $1;$1;"
+}
+
+printIfExists(){
+  if [ -e $ffileCandidate ] ; then
+    echo $1
+  else
+    # stdout can be captured, therefore stderr
+    debug "skipping not-existing link-target-dir $1" 1>&2
+  fi
+}
+
+createListOfLinksTargetsDirectories(){
+  pushd $source >/dev/null 2>&1 
+    local links=`listLinks $1`
+    for x in $links ; do 
+      echo "$x" | grep "jre-abrt" > /dev/null
+      if [ $? -eq 0 ] ; then
+        continue
+      fi
+      local ffileCandidate=$(echo $x | sed "s/.*_->_//") ;
+# ignoring relative paths as they may lead who know where later   
+# there can be simlink relative to position, so push is not catching all
+      if [ "$ffileCandidate" != "${ffileCandidate#/}" ] ; then
+        if [ -d $ffileCandidate ] ; then
+# should we accept the links to directories themselves?
+          printIfExists $ffileCandidate
+        else
+          printIfExists `dirname $ffileCandidate`
+        fi
+      fi
+    done | sort | uniq
+  popd >/dev/null 2>&1 
+}
+
+sourceLinks=`listLinks $source`
+targetLinks=`listLinks $target`
+sourceLinksDirsTarget=`createListOfLinksTargetsDirectories  $source`
+targetLinksDirsTarget=`createListOfLinksTargetsDirectories  $target`
+
 debug "source: $source"
 debug "target: $target"
+
+debug "sourceLinks:
+$sourceLinks"
+debug "targetLinks:
+$targetLinks"
+
+debug "sourceLinksDirsTarget:
+$sourceLinksDirsTarget"
+debug "targetLinksDirsTarget:
+$targetLinksDirsTarget"
+
+sourceSearchPath="$source $sourceLinksDirsTarget"
+targetSearchPath="$target $targetLinksDirsTarget"
 
 work(){
   if [ "X$1" == "Xrpmnew" -o "X$1" == "Xrpmorig" ] ; then
@@ -69,7 +124,7 @@ work(){
     return 1
   fi
 
-  local files=`find $target | grep "\\.$1$"`
+  local files=`find $targetSearchPath | grep "\\.$1$"`
   for file in $files ; do
     local sf1=`echo $file | sed "s/\\.$1$//"`
     local sf2=`echo $sf1 | sed "s/$targetName/$srcName/"`
@@ -78,8 +133,7 @@ work(){
     if [ $? -gt 0 ] ; then
      if [ "X$1" == "Xrpmnew" ] ; then
        debug "$sf2 was NOT modified, removing possibly corrupted $sf1 and renaming from $file"
-       rm $rma $sf1 
-       mv $rma $file $sf1
+       mv $rma -f $file $sf1
        if [ $? -eq 0 ] ; then
          echo "restored $file to $sf1"
        else
@@ -110,7 +164,7 @@ work rpmorig
 debug "Working with rpmorig (2)"
 # simply moving old rpmsaves to new dir
 # fix for config (replace) leftovers
-files=`find $source | grep "\\.rpmorig$"`
+files=`find $sourceSearchPath | grep "\\.rpmorig$"`
   for file in $files ; do
     rpmsaveTarget=`echo $file | sed "s/$srcName/$targetName/"`
     debug "relocating $file to $rpmsaveTarget"
@@ -122,7 +176,7 @@ files=`find $source | grep "\\.rpmorig$"`
   done
 
 debug "Working with rpmsave (1)"
-files=`find $source | grep "\\.rpmsave$"`
+files=`find $sourceSearchPath | grep "\\.rpmsave$"`
   for file in $files ; do
     rpmsaveTarget=`echo $file | sed "s/$srcName/$targetName/"`
     debug "relocating $file to $rpmsaveTarget"
@@ -136,8 +190,9 @@ files=`find $source | grep "\\.rpmsave$"`
 
 #warning: file /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.131-11.b12.el7.x86_64-debug/jre/lib/applet: remove failed: No such file or directory
 #warning: file /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.131-11.b12.el7.x86_64-debug/jre/lib/amd64/client: remove failed: No such file or directory
+#warning: file /usr/lib/jvm/java-1.7.0-openjdk-1.7.0.171-2.6.13.2.el7.x86_64/jre/lib/amd64/xawt: remove failed: No such file or directory
 #those dirs might be mepty by installtion, filling to not be rmeoved later
-blackdirs="$source/jre/lib/applet $source/jre/lib/*/client"
+blackdirs="$source/jre/lib/applet $source/jre/lib/*/client $source/jre/lib/locale/*/LC_MESSAGE $source/jre/lib/*/xawt"
 for blackdir in $blackdirs; do
   if [ -e $blackdir ] ; then
     debug "nasty $blackdir  exists, filling"
@@ -149,11 +204,11 @@ done
 
 debug "cleaning legacy leftowers"
 if [ "x$debug" == "xtrue" ] ; then
-  find $source -empty -type d -delete
-  rmdir $rma $source
+  find $sourceSearchPath -empty -type d -delete
+  rmdir $rma $sourceSearchPath
 else
-  find $source -empty -type d -delete 2>/dev/null >/dev/null
-  rmdir $rma $source 2>/dev/null >/dev/null
+  find $sourceSearchPath -empty -type d -delete 2>/dev/null >/dev/null
+  rmdir $rma $sourceSearchPath 2>/dev/null >/dev/null
 fi
 
 # and remove placeholders
